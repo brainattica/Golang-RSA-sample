@@ -12,7 +12,6 @@ import (
 func main() {
 
 	// Generate RSA Keys
-
 	miryanPrivateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 
 	if err != nil {
