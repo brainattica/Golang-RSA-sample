@@ -1,0 +1,129 @@
+As we said all of the major cryptographic libraries are often written in C (or in C++). Go is quite C-like in spirit, being a small and efficient language with convenient low-level facilities such as pointers. Yet Go also offers many features associated with high- or very high-level languages. Go Philosphy is Code less, compile quicker, execute faster".
+
+All of this makes it a good choice for Cryptography applications.
+
+In this example, we will show you how to use each of the functions listed in the crypto/rsa package.
+
+If Jimena want to send a secret message to Alistair:
+
+1- Jimena and Alistair must have their RSA key pair with private key and public key:
+
+```
+package main
+
+		import (
+			"crypto"
+			"crypto/rand"
+			"crypto/rsa"
+			"crypto/sha256"
+			"fmt"
+			"os"
+		)
+
+		func main() {
+
+			jimenaPrivateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+
+			if err != nil {
+				fmt.Println(err.Error)
+				os.Exit(1)
+			}
+
+			jimenaPublicKey := &jimenaPrivateKey.PublicKey
+
+			alistairPrivateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+
+			if err != nil {
+				fmt.Println(err.Error)
+				os.Exit(1)
+			}
+
+			alistairPublicKey := &alistairPrivateKey.PublicKey
+
+			fmt.Println("Private Key : ", jimenaPrivateKey)
+			fmt.Println("Public key ", jimenaPublicKey)
+			fmt.Println("Private Key : ", alistairPrivateKey)
+			fmt.Println("Public key ", alistairPublicKey)
+
+		}
+```
+
+2- Firstly she should encrypt her message with the Alistair’s public key to send it encrypted.
+```
+message := []byte("the code must be like a piece of music")
+label := []byte("")
+hash := sha256.New()
+
+ciphertext, err := rsa.EncryptOAEP(hash, rand.Reader, alistairPublicKey, message, label)
+
+if err != nil {
+	fmt.Println(err)
+	os.Exit(1)
+}
+
+fmt.Printf("OAEP encrypted [%s] to \n[%x]\n", string(message), ciphertext)
+```
+
+Note -> OAEP es the recommended padding choice for encryption for new protocols or applications. PKCS1v15 should only be used to support legacy protocols.
+
+3- Next Jimena should sign your message with her private key to ensure the recipient can check the message sender with Jimena’s public key to confirm the sender is Jimena.
+
+```
+var opts rsa.PSSOptions
+opts.SaltLength = rsa.PSSSaltLengthAuto // for simple example
+PSSmessage := message
+newhash := crypto.SHA256
+pssh := newhash.New()
+pssh.Write(PSSmessage)
+hashed := pssh.Sum(nil)
+
+signature, err := rsa.SignPSS(rand.Reader, jimenaPrivateKey, newhash, hashed, &opts)
+
+if err != nil {
+	fmt.Println(err)
+	os.Exit(1)
+}
+
+fmt.Printf("PSS Signature : %x\n", signature)
+```
+
+Note -> PSS algorithm is the recommended padding choice for any new protocols or applications, PKCS1v15 should only be used to support legacy protocols.
+
+4- Jimena has all necessary parts to send her secret message to Alistair now:
+
+```
+[ciphertext, signature]
+```
+
+5- When Alistair receive Jimena's message the first thing he’ll do will be decrypt the message:
+
+```
+plainText, err := rsa.DecryptOAEP(hash, rand.Reader, alistairPrivateKey, ciphertext, label)
+
+if err != nil {
+	fmt.Println(err)
+	os.Exit(1)
+}
+
+fmt.Printf("OAEP decrypted [%x] to \n[%s]\n", ciphertext, plainText)
+```
+
+6- Last resort, Alistair should check the message origin to determine it is Jimena:
+```
+err = rsa.VerifyPSS(jimenaPublicKey, newhash, hashed, signature, &opts)
+
+if err != nil {
+	fmt.Println("Who are U? Verify Signature failed")
+	os.Exit(1)
+} else {
+	fmt.Println("Verify Signature successful")
+}
+```
+
+Finally, Alistair has got his message sent by Jimena and he could check the message is authentic. Alistair isn’t able to hide his joy!
+
+We've created a repository where you can find all the code about this complete sample in https://github.com/brainattica/Golang-RSA-sample
+
+On the next article we'll show you how to export and import RSA keypairs in PEM format.
+
+Have fun!
