@@ -15,7 +15,7 @@ func main() {
 	miryanPrivateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 
 	if err != nil {
-		fmt.Println(err.Error)
+		fmt.Println(err.Error())
 		os.Exit(1)
 	}
 
@@ -24,7 +24,7 @@ func main() {
 	raulPrivateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 
 	if err != nil {
-		fmt.Println(err.Error)
+		fmt.Println(err.Error())
 		os.Exit(1)
 	}
 
